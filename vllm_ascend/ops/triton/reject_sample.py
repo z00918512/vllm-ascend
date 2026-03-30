@@ -387,7 +387,9 @@ def rejection_random_sample_block_verify_kernel(
     mask = offsets < vec_len
     is_greedy = tl.load(is_greedy_ptr + offsets, mask, other=1)
     not_greedy_mask = is_greedy == 0
-    start_idxs = tl.where(offsets == 0, 0, tl.load(cu_num_draft_tokens_ptr + offsets - 1, not_greedy_mask))
+    prev_mask = not_greedy_mask & (offsets > 0)
+    prev_end_idxs = tl.load(cu_num_draft_tokens_ptr + offsets - 1, prev_mask, other=0)
+    start_idxs = tl.where(offsets == 0, 0, prev_end_idxs)
     end_idxs = tl.load(cu_num_draft_tokens_ptr + offsets, not_greedy_mask)
     n_num_draft_tokens = end_idxs - start_idxs
     loop = (vocab_size + SUB_BLOCK - 1) // SUB_BLOCK
